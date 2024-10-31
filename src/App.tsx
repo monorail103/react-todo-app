@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUndo, faCheck, faCalendar } from "@fortawesome/free-solid-svg-icons";
 import dayjs from 'dayjs';
 import ja from 'dayjs/locale/ja';
 import { Todo } from './types';
 
-export const taskEndDate = ({ deadline, isDone, priority, name }: Todo): string => {
+const taskEndDate = ({ deadline }: Todo): string => {
   dayjs.locale(ja);
   const now = dayjs();
   const end = dayjs(deadline);
   const diffHours = now.diff(end, 'hour');
 
-  return `【${isDone ? "済" : "未"}】 ${name} ${'★'.repeat(priority)} （${now < end ? `期限まで残り${Math.abs(diffHours)}時間` : `期限を${diffHours}時間超過`}）`;
+  if(Math.abs(diffHours) === 0) {
+    return `（現在時間が期限）`;
+  }
+  return `${now < end ? `（残り${Math.abs(diffHours)}時間` : `期限を${diffHours}時間超過`}）`;
 };
 
 const TodoApp: React.FC = () => {
@@ -47,11 +52,14 @@ const TodoApp: React.FC = () => {
   };
 
   const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map(todo =>
-        todo.id === id ? { ...todo, isDone: !todo.isDone } : todo
-      )
-    );
+    // 削除
+    const setTodo = localStorage.getItem('todos');
+    if (setTodo) {
+      const todosArray: Todo[] = JSON.parse(setTodo);
+      const updatedTodos = todosArray.filter(todo => todo.id !== id);
+      setTodos(updatedTodos);
+      localStorage.setItem('todos', JSON.stringify(updatedTodos));
+    }
   };
   
   return (
@@ -91,17 +99,28 @@ const TodoApp: React.FC = () => {
         </div>
         <br />
         <ul className='mt-4 items-baseline'>
-          {todos.map(todo => (
+          { todos.length === 0 ? (
+            <li className='text-gray-500'>現在、タスクはありません。</li>
+          ) : (todos.map(todo => (
               <li 
-                className= 'bg-gray-200 p-2 rounded-md mb-2 shadow-md flex justify-between items-center'
+                className= 'bg-gray-100 p-2 rounded-md mb-2 shadow-md flex items-baseline'
                 key={todo.id} 
                 style={{ 
                   textDecoration: todo.isDone ? 'line-through' : 'none',
                   fontWeight: todo.priority >= 3 ? 'bold' : 'normal',
-                  color: todo.priority >= 4 ? 'red' : 'black',
+                  color: todo.deadline < new Date() ? 'red' : 'black',
                 }}
               >
+              <FontAwesomeIcon icon={faCheck}  className="mr-1" size="1x"/>
+              {todo.name}  
+              <div className="ml-2 text-orange-600">
+                {'★'.repeat(todo.priority)} 
+              </div>
+              <div className='ml-2 text-blue-600'>
+                期限: {dayjs(todo.deadline).format("YYYY/MM/DD(ddd) HH:mm")}
+              </div>
               {taskEndDate(todo)}
+              
               <button 
                 className='bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md ml-2 text-sm'
                 onClick={() => toggleTodo(todo.id)}
@@ -109,7 +128,7 @@ const TodoApp: React.FC = () => {
                 {todo.isDone ? 'Undo' : 'Complete'}
               </button>
               </li>
-          ))}
+          )))}
         </ul>
       </div>
     </>
