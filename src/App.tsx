@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUndo, faCheck, faCalendar } from "@fortawesome/free-solid-svg-icons";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import dayjs from 'dayjs';
 import ja from 'dayjs/locale/ja';
 import { Todo } from './types';
