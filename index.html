@@ -6,24 +6,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TodoApp</title>
     <script type="text/javascript">
+      // 修正版
       (function (l) {
-        if (l.search[1] === "/") {
+        // デバッグ用のログ
+        console.log("Current URL:", l.href);
+
+        // クエリ文字列が存在する場合のみ処理
+        if (l.search) {
           var decoded = l.search
-            .slice(1)
+            .slice(1) // ?を取り除く
             .split("&")
             .map(function (s) {
               return s.replace(/~and~/g, "&");
             })
-            .join("?");
-          window.history.replaceState(
-            null,
-            null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-          );
+            .join("&"); // 正しいクエリ文字列の形式に戻す
+
+          // デバッグ用のログ
+          console.log("Decoded query string:", decoded);
+
+          // URLをリダイレクト
+          var newUrl = l.pathname + (decoded ? "?" + decoded : "") + l.hash;
+          window.history.replaceState(null, null, newUrl);
+
+          // デバッグ用のログ
+          console.log("New URL:", newUrl);
         }
       })(window.location);
     </script>
-    <script type="module" crossorigin src="/react-todo-app/assets/main-Bj13dm_S.js"></script>
+    <script type="module" crossorigin src="/react-todo-app/assets/main-dFJblITo.js"></script>
     <link rel="stylesheet" crossorigin href="/react-todo-app/assets/main-QPXePe4Q.css">
   </head>
   <body>
