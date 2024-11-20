@@ -5,7 +5,33 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TodoApp</title>
+    <script type="text/javascript">
+      (function (l) {
+        // デバッグ用のログ
+        console.log("Current URL:", l.href);
 
+        // クエリ文字列が存在する場合のみ処理
+        if (l.search) {
+          var decoded = l.search
+            .slice(1) // ?を取り除く
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("&"); // 正しいクエリ文字列の形式に戻す
+
+          // デバッグ用のログ
+          console.log("Decoded query string:", decoded);
+
+          // URLをリダイレクト
+          var newUrl = l.pathname + (decoded ? "?" + decoded : "") + l.hash;
+          window.history.replaceState(null, null, newUrl);
+
+          // デバッグ用のログ
+          console.log("New URL:", newUrl);
+        }
+      })(window.location);
+    </script>
   </head>
   <body>
     <div id="root"></div>
