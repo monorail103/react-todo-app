@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faEdit } from "@fortawesome/free-solid-svg-icons";
 import dayjs from 'dayjs';
 import ja from 'dayjs/locale/ja';
 import { Todo } from './types';
@@ -22,6 +22,8 @@ const TodoApp: React.FC = () => {
   const [newTodo, setNewTodo] = useState<string>('');
   const [newPriority, setNewPriority] = useState<number>(1);
   const [newDeadline, setNewDeadline] = useState<Date>(new Date());
+  const [editingTodoId, setEditingTodoId] = useState<number | null>(null);
+  const [sortMethod, setSortMethod] = useState<string>('priority');
 
   useEffect(() => {
     const savedTodos = localStorage.getItem('todos');
@@ -61,7 +63,30 @@ const TodoApp: React.FC = () => {
       localStorage.setItem('todos', JSON.stringify(updatedTodos));
     }
   };
-  
+
+  const editTodo = (id: number, name: string, priority: number, deadline: Date) => {
+    const updatedTodos = todos.map(todo => 
+      todo.id === id ? { ...todo, name, priority, deadline, isDone: false } : todo
+    );
+    setTodos(updatedTodos);
+    setEditingTodoId(null);
+  };
+
+  const sortTodos = (method: string) => {
+    const sortedTodos = [...todos].sort((a, b) => {
+      switch (method) {
+        case 'priority':
+          return b.priority - a.priority;
+        case 'deadline':
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        default:
+          return a.id - b.id;
+      }
+    });
+    setTodos(sortedTodos);
+    setSortMethod(method);
+  };
+
   return (
     <>
       <div className='mt-10 mx-10'>
@@ -75,26 +100,31 @@ const TodoApp: React.FC = () => {
             onChange={(e) => setNewTodo(e.target.value)}
           />
           <br />
-          <label className="mr-2">優先度:</label>
-          <input
+            <label className="mr-2">優先度:</label>
+            <input
             type="number"
             value={newPriority}
             min={1}
             className='border border-gray-300 rounded-md p-1'
             onChange={(e) => setNewPriority(parseInt(e.target.value))}
-          />
-          <br />
-          <input
+            />
+            <br />
+            <input
             type="datetime-local"
-            value={newDeadline.toISOString().split('T')[0]}
+            value={dayjs(new Date()).format('YYYY-MM-DDTHH:mm')}
             className='border border-gray-300 rounded-md p-1'
             onChange={(e) => setNewDeadline(new Date(e.target.value))}
-          />
-          <br />
+            />
+            <br />
           <button 
             onClick={addTodo} 
             className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded-md'>
-            Add Todo
+            追加
+          </button>
+          <button 
+            onClick={() => sortTodos(sortMethod === 'priority' ? 'deadline' : 'priority')} 
+            className='ml-2 bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded-md'>
+            {sortMethod === 'priority' ? '期限' : '優先度'}順
           </button>
         </div>
         <br />
@@ -111,22 +141,61 @@ const TodoApp: React.FC = () => {
                   color: todo.deadline < new Date() ? 'red' : 'black',
                 }}
               >
-              <FontAwesomeIcon icon={faCheck}  className="mr-1" size="1x"/>
-              {todo.name}  
-              <div className="ml-2 text-orange-600">
-                {'★'.repeat(todo.priority)} 
-              </div>
-              <div className='ml-2 text-blue-600'>
-                期限: {dayjs(todo.deadline).format("YYYY/MM/DD(ddd) HH:mm")}
-              </div>
-              {taskEndDate(todo)}
-              
-              <button 
-                className='bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md ml-2 text-sm'
-                onClick={() => toggleTodo(todo.id)}
-              >
-                {todo.isDone ? 'Undo' : 'Complete'}
-              </button>
+              {editingTodoId === todo.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={todo.name}
+                    className='border border-gray-300 rounded-md p-1'
+                    onChange={(e) => setTodos(todos.map(t => t.id === todo.id ? { ...t, name: e.target.value } : t))}
+                  />
+                  <input
+                    type="number"
+                    value={todo.priority}
+                    min={1}
+                    className='border border-gray-300 rounded-md p-1'
+                    onChange={(e) => setTodos(todos.map(t => t.id === todo.id ? { ...t, priority: parseInt(e.target.value) } : t))}
+                  />
+                  <input
+                    type="datetime-local"
+                    value={new Date(todo.deadline).toISOString().slice(0, 16)}
+                    className='border border-gray-300 rounded-md p-1'
+                    onChange={(e) => setTodos(todos.map(t => t.id === todo.id ? { ...t, deadline: new Date(e.target.value) } : t))}
+                  />
+                  <input
+                    type='button'
+                    value='保存'
+                    className='bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md ml-2 text-sm'
+                    onClick={() => {
+                      setEditingTodoId(null);
+                      editTodo(todo.id, todo.name, todo.priority, new Date(todo.deadline));
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  {todo.name}  
+                  <div className="ml-2 text-orange-600">
+                    {'★'.repeat(todo.priority)} 
+                  </div>
+                  <div className='ml-2 text-blue-600'>
+                    期限: {dayjs(todo.deadline).format("YYYY/MM/DD(ddd) HH:mm")}
+                  </div>
+                  {taskEndDate(todo)}
+                  <button 
+                    className='bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md ml-2 text-sm'
+                    onClick={() => setEditingTodoId(todo.id)}
+                  >
+                    <FontAwesomeIcon icon={faEdit} size="1x"/>
+                  </button>
+                  <button 
+                    className='bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md ml-2 text-sm'
+                    onClick={() => toggleTodo(todo.id)}
+                  >
+                    <FontAwesomeIcon icon={faCheck} size="1x"/>
+                  </button>
+                </>
+              )}
               </li>
           )))}
         </ul>
@@ -135,4 +204,4 @@ const TodoApp: React.FC = () => {
   );
 };
 
-export default TodoApp
+export default TodoApp;
